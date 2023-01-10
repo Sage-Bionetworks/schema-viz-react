@@ -172,6 +172,53 @@ function CreateCollapsibleTree({ chartObj }: Props) {
                 })
             flexibleNode.exit().remove();
 
+            //control text
+            var flexibleText: Selection<SVGTextElement, Nodes, SVGSVGElement, unknown> | any = svg.selectAll('text').data(interactivePartNode);
+            var flexibleTextEnter = flexibleText.enter()
+
+            flexibleTextEnter.append('text').merge(flexibleText)
+                .attr("class", function (d: Nodes) {
+                    return d._direct_children && d._direct_children.length > 0 && !checkIfDirectLinkExist(d, bundles) ? "fa" : ""
+                })
+                .attr('x', function (d: Nodes) { return (d.x + 5) })
+                .attr('y', function (d: Nodes) { return (d.y - d.height / 2 - 4) })
+                .attr("id", function (d: Nodes) { return "text_" + d.id; })
+                .text(function (d: Nodes) {
+                    if (d._direct_children && d._direct_children.length > 0 && !checkIfDirectLinkExist(d, bundles)) {
+                        var label = d.id
+                        var result = label.concat('\uf067')
+                        return result
+                    } else {
+                        return d.id
+                    }
+                })
+                .on('mouseover', mouseover)
+                .on('mouseout', mouseout)
+            flexibleText.exit().remove();
+            //control links
+            var link: Selection<SVGPathElement, Bundles, BaseType, unknown> | any = svg.select("g").selectAll("path.link").data(bundles);
+            var flexibleLinkEnter = link.enter();
+
+            flexibleLinkEnter.append('path').merge(link)
+                .attr('class', 'link')
+                .attr("id", function (d: Bundles) { return "link_" + d.id; })
+                .attr('d', function (b: Bundles) {
+                    let d = b.links.map(l => `
+                    M${l.xt} ${l.yt}
+                    L${l.xb - l.c1} ${l.yt}
+                    A${l.c1} ${l.c1} 90 0 1 ${l.xb} ${l.yt + l.c1}
+                    L${l.xb} ${l.ys - l.c2}
+                    A${l.c2} ${l.c2} 90 0 0 ${l.xb + l.c2} ${l.ys}
+                    L${l.xs} ${l.ys}`).join("")
+                    return d
+                })
+                .attr('stroke', function (b: Bundles) {
+                    return color(b.id)
+                })
+                .attr('stroke-width', 2)
+
+            link.exit().remove();
+
         }
 
         function concatArr<T>(...arrays: (T[] | undefined)[]): T[] {
@@ -223,6 +270,40 @@ function CreateCollapsibleTree({ chartObj }: Props) {
 
         }
 
+
+        //define mouseover and mouseout effect
+        function mouseover(event: any, d: Nodes) {
+            var textId = d.id
+
+            //change the stroke width of node
+            d3.selectAll("#node_" + textId).style("stroke-width", "10");
+
+            //change the size of text
+            d3.selectAll("#text_" + textId).style("font-size", "12")
+
+            //change the stroke width of links
+            // d3.selectAll("path.link").filter(function (d: Nodes) {
+            //     var linkId = d.id
+            //     return linkId.includes(textId)
+            // }).style("stroke-width", "4")
+        }
+
+        function mouseout(event: any, d: Nodes) {
+            var textId = d.id
+
+            //change the stroke width of node
+            d3.selectAll("#node_" + textId).style("stroke-width", "8");
+
+            //change the size of text
+            d3.selectAll("#text_" + textId).style("font-size", "10")
+
+            //change the stroke width of links
+            // d3.selectAll("path.link").filter(function (d: Nodes) {
+            //     var linkId = d.id
+            //     return linkId.includes(textId)
+            // }).style("stroke-width", "2")
+
+        }
 
 
     })
